@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://unpkg.com/konva@2.4.2/konva.min.js"></script>
+  <meta charset="utf-8">
+  <title>Actuation Test</title>
+  <meta http-equiv="refresh" content="300">
+</head>
+
+<body>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #ffccff;
+        }
+        
+    </style>
+    <center><h1 id="instructions"> Scroll Using Down Arrow</h1></center>
+    <div id="container"></div>
+    <script>  
+
+    var index = 1;
+    var data = [];
+    getData();
+
+    function processData(allText) {
+        var allTextLines = allText.split(/\r\n|\n/);
+        var headers = allTextLines[0].split(',');
+        var lines = [];
+        
+        for (var i=1; i<allTextLines.length; i++) {
+            var contents = allTextLines[i].split(',');
+            if (contents.length == headers.length) {
+                var tarr = [];
+                
+                for (var j=0; j<headers.length; j++) {
+                    tarr.push(contents[j]);
+                }
+                lines.push(tarr);
+            }
+        }
+        return lines;
+    }
+
+    function getData(){
+        var xmlhttp;
+        
+        if (window.XMLHttpRequest) {
+            xmlhttp = new XMLHttpRequest();
+        }           
+        
+        else {               
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");               
+        }
+        
+        xmlhttp.onreadystatechange = function () {               
+            if (xmlhttp.readyState == 4) {                   
+                var lines = xmlhttp.responseText;    
+                data = processData(lines);
+            }               
+        }
+
+        xmlhttp.open("GET", "data.txt", true);
+        xmlhttp.send();    
+    }
+
+    document.onkeydown = checkKey;
+
+    function changeBackground(h, s, l) {
+        var h = h.toString();
+        var s = s.toString();
+        var l = l.toString();
+        var color = 'hsl(' + h + ',' + s +'%,' + l + '%)';
+
+        document.body.style.backgroundColor = color;
+    }
+    
+    function makeline(a, intervals, h, s, l) {
+        var width = window.innerWidth;
+        var step = window.innerWidth/(intervals-1);
+        var a = a;
+        var i = intervals;
+        var amp = 200;
+        var points = [];
+        var h = h.toString();
+        var s = s.toString();
+        var l = l.toString();
+        var color = 'hsl(' + h + ',' + s +'%,' + l + '%)';
+        console.log(color);
+
+        for (x = 0; x < i; x++) {
+            if (x == 0) {
+                var p_x = -10;
+                var p_y = amp*a*Math.random()*Math.sin(x*Math.PI/(i-1)); 
+                points.push(p_x);
+                points.push(p_y);
+            } 
+            
+            else if (x == i-1) {
+                var p_x = width+10;
+                var p_y = amp*a*Math.random()*Math.sin(x*Math.PI/(i-1));
+                points.push(p_x);
+                points.push(p_y);
+            } 
+            
+            else {
+                var p_x = 0+x*step;
+                var p_y = amp*a*Math.random()*Math.sin(x*Math.PI/(i-1));
+                points.push(p_x);
+                points.push(p_y);
+            }
+        }
+
+        var line = new Konva.Line({
+            points: points,
+            stroke: color,
+            strokeWidth: 7,
+            lineCap: 'round',
+            lineJoin: 'round',
+            tension : 0.5
+            });
+        
+        return line;
+    }
+    
+    function setStage(a, h, s, l){
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        var stage = new Konva.Stage({
+            container: 'container',
+            width: width,
+            height: height
+            });
+            
+        var layer = new Konva.Layer();
+        
+        for (j = 0; j < 20; j++) {
+            var y = makeline(a, 11, h, s, l)
+            y.move({
+                x : 0,
+                y : 25 + 50*j
+                });
+            layer.add(y);
+        }
+        stage.add(layer);
+    }
+
+    function formatData(){
+
+        if (index >= 1){
+            var point = data[index];
+        }
+
+        else {
+            var point = data[1];
+        }
+
+        var dt = point[0];
+        var tweet = point[1];
+        var uv = point[2];
+        var cc = point[3];
+
+        var b_d = 200 + 150 * uv;
+        var b_s = 50 + 50 * Math.random();
+        var b_b = 35 + 15 * Math.random();
+
+        var l_d = 60 + 110 * cc;
+        var l_s = 50 + 50 * Math.random();
+        var l_b = 65;
+
+        var formatData = [dt, parseFloat(tweet), b_d, b_s, b_b, l_d, l_s, l_b];
+        return formatData;
+    }
+
+    function checkKey(e) {
+
+        e = e || window.event;
+
+        if (e.keyCode == '40') {
+            var coeff = formatData();
+            console.log(coeff);
+            setStage(coeff[1], coeff[5], coeff[6], coeff[7]);
+            changeBackground(coeff[2], coeff[3], coeff[4]);
+            instructions.innerText = coeff[0];
+            index = index + 1;            
+
+        }
+        else if (e.keyCode == '38') {
+            if (index > 1){
+                index = index - 1;
+            }
+            else{
+                index = 1;
+            }
+            var coeff = formatData();
+            setStage(coeff[1], coeff[5], coeff[6], coeff[7]);
+            changeBackground(coeff[2], coeff[3], coeff[4]);
+            instructions.innerText = coeff[0];            
+        }
+    }
+
+    </script>
+</body>
+</html>
